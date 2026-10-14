@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: #f4f6fb;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #4f46e5;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #eef2ff;
+  --color-secondary-foreground: #312e81;
+  --color-muted: #e8edf7;
+  --color-muted-foreground: #64748b;
+  --color-accent: #e0e7ff;
+  --color-accent-foreground: #312e81;
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #d7deec;
+  --color-input: #d7deec;
+  --color-ring: #4f46e5;
+  --color-success: #059669;
+  --color-warning: #d97706;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply min-h-dvh bg-background font-sans text-foreground;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgb(79 70 229 / 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgb(14 165 233 / 0.06), transparent);
+    background-attachment: fixed;
+  }
+
+  #root {
+    @apply min-h-dvh;
+  }
+}
+
+@layer utilities {
+  .page-enter {
+    animation: page-enter 220ms ease-out;
+  }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
