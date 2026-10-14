@@ -39,7 +39,7 @@ export function LoginPage() {
         navigate(from, { replace: true })
       } else {
         await signUp(email.trim(), password, fullName.trim())
-        toast.success('Account created. An admin must approve access before you can use the app.')
+        toast.success('Account created. You can sign in now.')
         setMode('signin')
       }
     } catch (err) {
@@ -63,7 +63,7 @@ export function LoginPage() {
                 Build Tracker
               </CardTitle>
               <CardDescription className="mt-1">
-                Invite-only access for publishing and finding application builds.
+                Sign up to publish and find application builds for your team.
               </CardDescription>
             </div>
           </CardHeader>

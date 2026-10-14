@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Download, Smartphone } from 'lucide-react'
+import { Download, Smartphone, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/auth-context'
+import { listAllProfiles, updateProfilePrivileges } from '@/lib/api'
+import { formatDateTime } from '@/lib/utils'
+import type { Profile, UserRole } from '@/types/database'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -12,9 +24,12 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function SettingsPage() {
-  const { profile, user, isAdmin, signOut, configured } = useAuth()
+  const { profile, user, isAdmin, signOut, configured, refreshProfile } = useAuth()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [online, setOnline] = useState(navigator.onLine)
+  const [users, setUsers] = useState<Profile[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [savingId, setSavingId] = useState<string | null>(null)
 
   useEffect(() => {
     const onBeforeInstall = (e: Event) => {
@@ -33,6 +48,23 @@ export function SettingsPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isAdmin || !configured) return
+    let mounted = true
+    setLoadingUsers(true)
+    listAllProfiles()
+      .then((rows) => {
+        if (mounted) setUsers(rows)
+      })
+      .catch((err: Error) => toast.error(err.message))
+      .finally(() => {
+        if (mounted) setLoadingUsers(false)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [isAdmin, configured])
+
   async function handleInstall() {
     if (!deferredPrompt) {
       toast.message('Install is managed by your browser', {
@@ -49,8 +81,29 @@ export function SettingsPage() {
     setDeferredPrompt(null)
   }
 
+  async function patchUser(
+    id: string,
+    patch: { approved?: boolean; role?: UserRole },
+  ) {
+    if (id === user?.id && patch.role === 'member') {
+      toast.error('You cannot demote your own admin role from the UI.')
+      return
+    }
+    setSavingId(id)
+    try {
+      const updated = await updateProfilePrivileges(id, patch)
+      setUsers((prev) => prev.map((p) => (p.id === id ? updated : p)))
+      if (id === user?.id) await refreshProfile()
+      toast.success('User updated')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Update failed')
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Account</CardTitle>
@@ -74,6 +127,80 @@ export function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {isAdmin ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Users
+            </CardTitle>
+            <CardDescription>
+              All signed-up profiles. New accounts are auto-approved. Role and approval changes are
+              enforced by RLS — members cannot elevate themselves.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {loadingUsers ? (
+              <div className="space-y-2">
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-14 w-full" />
+              </div>
+            ) : users.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No profiles found.</p>
+            ) : (
+              <ul className="divide-y rounded-lg border">
+                {users.map((row) => (
+                  <li
+                    key={row.id}
+                    className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <p className="truncate font-medium">
+                        {row.full_name || 'Unnamed'}{' '}
+                        {row.id === user?.id ? (
+                          <span className="text-xs font-normal text-muted-foreground">(you)</span>
+                        ) : null}
+                      </p>
+                      <p className="truncate text-sm text-muted-foreground">{row.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Joined {formatDateTime(row.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={row.approved ? 'success' : 'warning'}>
+                        {row.approved ? 'Approved' : 'Not approved'}
+                      </Badge>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={savingId === row.id}
+                        onClick={() => patchUser(row.id, { approved: !row.approved })}
+                      >
+                        {row.approved ? 'Revoke' : 'Approve'}
+                      </Button>
+                      <Select
+                        value={row.role}
+                        onValueChange={(v) => patchUser(row.id, { role: v as UserRole })}
+                        disabled={savingId === row.id}
+                      >
+                        <SelectTrigger className="w-[8.5rem]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -100,26 +227,6 @@ export function SettingsPage() {
             <li>iOS Safari: Share → Add to Home Screen.</li>
             <li>Android Chrome: Install app / Add to Home screen.</li>
           </ul>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin notes</CardTitle>
-          <CardDescription>
-            Roles and approvals are enforced by Supabase RLS, not only the UI.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Approve users and grant admin with SQL in the Supabase SQL Editor. Users cannot elevate
-            their own role through the client.
-          </p>
-          <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs text-foreground">
-{`update public.profiles
-set approved = true, role = 'admin'
-where email = 'you@company.com';`}
-          </pre>
         </CardContent>
       </Card>
     </div>

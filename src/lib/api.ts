@@ -4,9 +4,11 @@ import type {
   BuildFilters,
   BuildFormValues,
   BuildWithProject,
+  Profile,
   Project,
   ProjectFormValues,
   ProjectWithLatestBuild,
+  UserRole,
 } from '@/types/database'
 
 function requireClient() {
@@ -319,4 +321,32 @@ export async function getDashboardStats(): Promise<{
     recentBuilds: (recentRes.data ?? []) as BuildWithProject[],
     projectsWithLatest,
   }
+}
+
+export async function listAllProfiles(): Promise<Profile[]> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as Profile[]
+}
+
+export async function updateProfilePrivileges(
+  id: string,
+  patch: { approved?: boolean; role?: UserRole },
+): Promise<Profile> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      ...(patch.approved !== undefined ? { approved: patch.approved } : {}),
+      ...(patch.role !== undefined ? { role: patch.role } : {}),
+    })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as Profile
 }

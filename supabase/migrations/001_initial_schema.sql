@@ -14,7 +14,7 @@ create table if not exists public.profiles (
   email text,
   full_name text,
   role text not null default 'member' check (role in ('member', 'admin')),
-  approved boolean not null default false,
+  approved boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -121,7 +121,7 @@ begin
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
     'member',
-    false
+    true
   )
   on conflict (id) do update
     set email = excluded.email,
@@ -221,6 +221,12 @@ create policy "Approved users can read approved peers"
   on public.profiles for select
   to authenticated
   using (public.is_approved_user() and approved = true);
+
+drop policy if exists "Admins can read all profiles" on public.profiles;
+create policy "Admins can read all profiles"
+  on public.profiles for select
+  to authenticated
+  using (public.is_admin());
 
 drop policy if exists "Users can update own non-privileged fields" on public.profiles;
 create policy "Users can update own non-privileged fields"

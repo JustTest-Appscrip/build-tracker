@@ -1,0 +1,12 @@
+# Cloudflare Pages project config (direct upload / wrangler pages deploy).
+# Git-connected Pages projects can ignore this file and use dashboard settings.
+name = "build-tracker"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+# Set secrets/vars in the Cloudflare dashboard (or `wrangler pages secret`):
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
+# Note: Vite inlines VITE_* at build time — for CI/Git builds, configure them
+# as Pages environment variables before the build step. For `wrangler pages deploy`,
+# bake them into the local `npm run build` via `.env` / CI env, then upload `dist`.

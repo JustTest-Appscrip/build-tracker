@@ -41,11 +41,11 @@ This creates `profiles`, `projects`, `builds`, indexes, RLS policies, and privil
      - `http://127.0.0.1:43123/**`
      - `https://your-app.pages.dev/**`
 
-### 6. Approve users and set the first admin
+### 6. Auto-approve signup + first admin
 
-There are no default admin credentials. After you sign up, run the bootstrap SQL in **SQL Editor** (a plain privilege `UPDATE` fails until the trigger allows SQL Editor / null JWT — see migration `002_allow_sql_editor_admin_bootstrap.sql`).
+Signups are **auto-approved** (`003_auto_approve_and_admin_users.sql`). Anyone who registers can use the app immediately. Admins manage users under **Settings → Users**.
 
-Quick bootstrap (disable trigger, elevate, re-enable):
+There are no default admin credentials. After you sign up, promote yourself in **SQL Editor** (see `002` if a plain privilege `UPDATE` hits `P0001`):
 
 ```sql
 alter table public.profiles disable trigger protect_profile_privileges;
@@ -57,15 +57,7 @@ where email = 'you@company.com';
 alter table public.profiles enable trigger protect_profile_privileges;
 ```
 
-Approve teammates (after an admin exists, or with the trigger disabled / null-JWT fix applied):
-
-```sql
-update public.profiles
-set approved = true
-where email in ('qa@company.com', 'dev@company.com');
-```
-
-Users cannot grant themselves `admin` or `approved` through the client — RLS + triggers block authenticated self-elevation.
+Members cannot elevate their own role through the client — RLS + triggers still block self-elevation.
 
 ### 7. Create `.env`
 
