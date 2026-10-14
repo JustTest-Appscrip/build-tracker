@@ -1,5 +1,35 @@
 -- Build Tracker — open signup with auto-approve + admin can list all users
--- Run this entire file in Supabase → SQL Editor (after 001 and 002).
+-- Safe to run without 002: privilege function is fixed before any backfill UPDATE.
+
+-- ---------------------------------------------------------------------------
+-- Ensure SQL Editor / null-JWT can update profiles (002 content, idempotent)
+-- ---------------------------------------------------------------------------
+create or replace function public.protect_profile_privileges()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- No end-user JWT ⇒ SQL Editor, migrations, or service_role.
+  if auth.uid() is null then
+    return new;
+  end if;
+
+  if auth.uid() is distinct from new.id and not public.is_admin() then
+    raise exception 'Only admins can update other profiles';
+  end if;
+
+  if not public.is_admin() then
+    if new.role is distinct from old.role then
+      raise exception 'You cannot change your own role';
+    end if;
+    if new.approved is distinct from old.approved then
+      raise exception 'You cannot change your own approval status';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Default + trigger: new signups are approved immediately
@@ -29,10 +59,15 @@ begin
 end;
 $$;
 
--- Backfill anyone still waiting
+-- Backfill anyone still waiting (disable trigger for environments that never
+-- got 002 / in case an older function body is still attached mid-script)
+alter table public.profiles disable trigger protect_profile_privileges;
+
 update public.profiles
 set approved = true, updated_at = now()
 where approved = false;
+
+alter table public.profiles enable trigger protect_profile_privileges;
 
 -- ---------------------------------------------------------------------------
 -- RLS: admins can select every profile (including unapproved)
