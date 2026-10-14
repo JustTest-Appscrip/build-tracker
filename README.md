@@ -43,15 +43,21 @@ This creates `profiles`, `projects`, `builds`, indexes, RLS policies, and privil
 
 ### 6. Approve users and set the first admin
 
-After you create / invite your account:
+There are no default admin credentials. After you sign up, run the bootstrap SQL in **SQL Editor** (a plain privilege `UPDATE` fails until the trigger allows SQL Editor / null JWT — see migration `002_allow_sql_editor_admin_bootstrap.sql`).
+
+Quick bootstrap (disable trigger, elevate, re-enable):
 
 ```sql
+alter table public.profiles disable trigger protect_profile_privileges;
+
 update public.profiles
 set approved = true, role = 'admin'
 where email = 'you@company.com';
+
+alter table public.profiles enable trigger protect_profile_privileges;
 ```
 
-Approve teammates:
+Approve teammates (after an admin exists, or with the trigger disabled / null-JWT fix applied):
 
 ```sql
 update public.profiles
@@ -59,7 +65,7 @@ set approved = true
 where email in ('qa@company.com', 'dev@company.com');
 ```
 
-Users cannot grant themselves `admin` or `approved` through the client — RLS + triggers block it.
+Users cannot grant themselves `admin` or `approved` through the client — RLS + triggers block authenticated self-elevation.
 
 ### 7. Create `.env`
 

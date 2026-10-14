@@ -150,12 +150,18 @@ create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
 
--- Prevent clients from elevating their own role or approving themselves
+-- Prevent clients from elevating their own role or approving themselves.
+-- auth.uid() is null in SQL Editor / migrations / service_role — allow those
+-- paths so the first admin can be bootstrapped without a chicken-and-egg lock.
 create or replace function public.protect_profile_privileges()
 returns trigger
 language plpgsql
 as $$
 begin
+  if auth.uid() is null then
+    return new;
+  end if;
+
   if auth.uid() is distinct from new.id and not public.is_admin() then
     raise exception 'Only admins can update other profiles';
   end if;
