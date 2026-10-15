@@ -73,6 +73,15 @@ export function BuildForm({
     }
   }, [])
 
+  // Keep project preselected when navigating from a project detail page.
+  useEffect(() => {
+    const projectId = initialValues?.project_id
+    if (!projectId) return
+    setValues((prev) =>
+      prev.project_id === projectId ? prev : { ...prev, project_id: projectId },
+    )
+  }, [initialValues?.project_id])
+
   function setField<K extends keyof BuildFormValues>(key: K, value: BuildFormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
     setErrors((prev) => {
@@ -151,35 +160,47 @@ export function BuildForm({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="project">Project *</Label>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <div className="flex-1 space-y-2">
-              <Input
-                placeholder="Search projects…"
-                value={projectSearch}
-                onChange={(e) => setProjectSearch(e.target.value)}
-                disabled={loadingProjects}
-              />
-              <Select
-                value={values.project_id || undefined}
-                onValueChange={(v) => setField('project_id', v)}
-                disabled={loadingProjects}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select
+              value={values.project_id || undefined}
+              onValueChange={(v) => {
+                setField('project_id', v)
+                setProjectSearch('')
+              }}
+              disabled={loadingProjects}
+            >
+              <SelectTrigger
+                id="project"
+                className="sm:flex-1"
+                aria-invalid={Boolean(errors.project_id)}
               >
-                <SelectTrigger id="project" aria-invalid={Boolean(errors.project_id)}>
-                  <SelectValue placeholder={loadingProjects ? 'Loading…' : 'Select a project'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredProjects.map((project) => (
+                <SelectValue placeholder={loadingProjects ? 'Loading…' : 'Select a project'} />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="sticky top-0 z-10 bg-popover p-1">
+                  <Input
+                    placeholder="Type to filter projects…"
+                    value={projectSearch}
+                    onChange={(e) => setProjectSearch(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </div>
+                {filteredProjects.length === 0 ? (
+                  <p className="px-2 py-1.5 text-sm text-muted-foreground">No projects found</p>
+                ) : (
+                  filteredProjects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
             <Button
               type="button"
               variant="outline"
-              className="sm:self-end"
+              className="h-10 shrink-0"
               onClick={() => setProjectDialogOpen(true)}
             >
               Create new project

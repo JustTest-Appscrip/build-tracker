@@ -67,24 +67,38 @@ export function AppShell() {
     setMobileOpen(false)
   }
 
+  function isNavActive(to: string, pathname: string) {
+    if (to === '/') return pathname === '/'
+    if (to === '/builds/new') return pathname === '/builds/new'
+    if (to === '/builds') {
+      return (
+        pathname === '/builds' ||
+        (pathname.startsWith('/builds/') && !pathname.startsWith('/builds/new'))
+      )
+    }
+    if (to === '/projects') {
+      return pathname === '/projects' || pathname.startsWith('/projects/')
+    }
+    return pathname === to || pathname.startsWith(`${to}/`)
+  }
+
   const navContent = (
     <nav className="flex flex-1 flex-col gap-1 p-3">
       {NAV.map((item) => {
         const Icon = item.icon
+        const active = isNavActive(item.to, location.pathname)
         return (
           <NavLink
             key={item.to}
             to={item.to}
             end={'end' in item ? item.end : false}
             onClick={() => setMobileOpen(false)}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-slate-600 hover:bg-secondary hover:text-secondary-foreground',
-              )
-            }
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              active
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-slate-600 hover:bg-secondary hover:text-secondary-foreground',
+            )}
           >
             <Icon className="h-4 w-4" />
             {item.label}
@@ -165,13 +179,15 @@ export function AppShell() {
                   {pageTitle(location.pathname)}
                 </h1>
               </div>
-              <form onSubmit={submitSearch} className="hidden max-w-xs flex-1 sm:block">
-                <Input
-                  placeholder="Search builds…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </form>
+              {location.pathname !== '/builds/new' ? (
+                <form onSubmit={submitSearch} className="hidden max-w-xs flex-1 sm:block">
+                  <Input
+                    placeholder="Search builds…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </form>
+              ) : null}
               <Button asChild size="sm" className="hidden sm:inline-flex">
                 <Link to="/builds/new">
                   <PlusCircle />

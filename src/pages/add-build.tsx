@@ -14,7 +14,7 @@ export function AddBuildPage() {
   const initialValues = useMemo(
     () => ({
       ...EMPTY_BUILD_FORM,
-      project_id: params.get('project') ?? '',
+      project_id: params.get('project') ?? params.get('projectId') ?? '',
     }),
     [params],
   )
