@@ -108,7 +108,7 @@ export function LoginPage() {
                   ? 'Please wait…'
                   : mode === 'signin'
                     ? 'Sign in'
-                    : 'Request access'}
+                    : 'Sign up'}
               </Button>
             </form>
             <p className="mt-4 text-center text-sm text-muted-foreground">
@@ -120,7 +120,7 @@ export function LoginPage() {
                     className="font-medium text-primary hover:underline"
                     onClick={() => setMode('signup')}
                   >
-                    Request access
+                    Sign up
                   </button>
                 </>
               ) : (
