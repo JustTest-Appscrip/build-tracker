@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Copy, ExternalLink } from 'lucide-react'
+import { Copy, ExternalLink, MessagesSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   DistributionBadge,
@@ -8,7 +8,7 @@ import {
 } from '@/components/common/environment-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { displayDistribution, displayPlatform } from '@/lib/display'
+import { displayDistribution, displayPlatform, formatTeamsShare } from '@/lib/display'
 import { formatDateTime, safeExternalUrl, truncate } from '@/lib/utils'
 import type { BuildWithProject } from '@/types/database'
 
@@ -27,6 +27,15 @@ export function BuildCard({ build, showProject = true }: BuildCardProps) {
       toast.success('Build link copied')
     } catch {
       toast.error('Could not copy link')
+    }
+  }
+
+  async function copyForTeams() {
+    try {
+      await navigator.clipboard.writeText(formatTeamsShare(build, projectName))
+      toast.success('Copied for Teams')
+    } catch {
+      toast.error('Could not copy for Teams')
     }
   }
 
@@ -79,6 +88,10 @@ export function BuildCard({ build, showProject = true }: BuildCardProps) {
           <Button type="button" size="sm" variant="outline" onClick={copyLink}>
             <Copy />
             Copy Link
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={copyForTeams}>
+            <MessagesSquare />
+            Copy for Teams
           </Button>
           <Button asChild size="sm" variant="ghost">
             <Link to={`/builds/${build.id}`}>Details</Link>

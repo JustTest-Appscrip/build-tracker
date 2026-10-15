@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Copy, ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { Copy, ExternalLink, MessagesSquare, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { BuildForm } from '@/components/builds/build-form'
 import {
@@ -36,6 +36,7 @@ import {
   displayDistribution,
   displayPlatform,
   displayUser,
+  formatTeamsShare,
 } from '@/lib/display'
 import { formatDateTime, safeExternalUrl } from '@/lib/utils'
 import type { BuildFormValues, BuildWithProject } from '@/types/database'
@@ -83,22 +84,34 @@ export function BuildDetailPage() {
     )
   }
 
-  const url = safeExternalUrl(build.build_link)
-  const canEdit = Boolean(user && (build.created_by === user.id || isAdmin))
+  const current = build
+  const url = safeExternalUrl(current.build_link)
+  const canEdit = Boolean(user && (current.created_by === user.id || isAdmin))
   const canDelete = isAdmin
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(build!.build_link)
+      await navigator.clipboard.writeText(current.build_link)
       toast.success('Build link copied')
     } catch {
       toast.error('Could not copy link')
     }
   }
 
+  async function copyForTeams() {
+    try {
+      await navigator.clipboard.writeText(
+        formatTeamsShare(current, current.project?.name ?? 'Project'),
+      )
+      toast.success('Copied for Teams')
+    } catch {
+      toast.error('Could not copy for Teams')
+    }
+  }
+
   async function handleUpdate(values: BuildFormValues) {
     if (!user) throw new Error('Not signed in')
-    const updated = await updateBuild(build!.id, values, user.id)
+    const updated = await updateBuild(current.id, values, user.id)
     toast.success('Build updated')
     setEditOpen(false)
     await refresh()
@@ -108,9 +121,9 @@ export function BuildDetailPage() {
   async function handleDelete() {
     setDeleting(true)
     try {
-      await deleteBuild(build!.id)
+      await deleteBuild(current.id)
       toast.success('Build deleted')
-      navigate(build!.project_id ? `/projects/${build!.project_id}` : '/builds')
+      navigate(current.project_id ? `/projects/${current.project_id}` : '/builds')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed')
     } finally {
@@ -153,6 +166,10 @@ export function BuildDetailPage() {
           <Button type="button" variant="outline" onClick={copyLink}>
             <Copy />
             Copy Link
+          </Button>
+          <Button type="button" variant="outline" onClick={copyForTeams}>
+            <MessagesSquare />
+            Copy for Teams
           </Button>
           {canEdit ? (
             <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
