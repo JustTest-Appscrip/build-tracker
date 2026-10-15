@@ -73,5 +73,5 @@ export function formatTeamsShare(
   sections.push(versionLine)
   sections.push(`Link :- ${build.build_link.trim()}`)
 
-  return sections.join('\n\n')
+  return sections.join('\n')
 }
