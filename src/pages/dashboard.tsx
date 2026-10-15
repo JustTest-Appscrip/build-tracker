@@ -55,12 +55,32 @@ export function DashboardPage() {
     }
   }, [configured])
 
+  const query = search.trim().toLowerCase()
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      if (selectedProject !== 'all' && project.id !== selectedProject) return false
+      if (!query) return true
+      const haystack = [
+        project.name,
+        project.description,
+        project.latest_build?.version,
+        project.latest_build?.build_number,
+        project.latest_build?.notes,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      return haystack.includes(query)
+    })
+  }, [projects, query, selectedProject])
+
   const filteredRecent = useMemo(() => {
     return recentBuilds.filter((build) => {
       const matchesProject =
         selectedProject === 'all' || build.project_id === selectedProject
-      const q = search.trim().toLowerCase()
-      if (!q) return matchesProject
+      if (!matchesProject) return false
+      if (!query) return true
       const haystack = [
         build.project?.name,
         build.version,
@@ -71,9 +91,9 @@ export function DashboardPage() {
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
-      return matchesProject && haystack.includes(q)
+      return haystack.includes(query)
     })
-  }, [recentBuilds, search, selectedProject])
+  }, [recentBuilds, query, selectedProject])
 
   if (loading) return <PageSkeleton />
 
@@ -163,10 +183,15 @@ export function DashboardPage() {
           </h2>
           <p className="text-xs text-muted-foreground">Latest = most recently created</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {projects
-            .filter((p) => selectedProject === 'all' || p.id === selectedProject)
-            .map((project) => (
+        {filteredProjects.length === 0 ? (
+          <EmptyState
+            icon={FolderKanban}
+            title="No matching projects"
+            description="Try another search term, or clear the filter to see all projects."
+          />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {filteredProjects.map((project) => (
               <Card key={project.id} className="transition-shadow hover:shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">
@@ -205,7 +230,8 @@ export function DashboardPage() {
                 </CardContent>
               </Card>
             ))}
-        </div>
+          </div>
+        )}
       </section>
 
       <section className="space-y-3">

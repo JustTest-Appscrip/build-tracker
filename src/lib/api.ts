@@ -6,7 +6,11 @@ import type {
   BuildWithProject,
   Profile,
   Project,
+  ProjectCredential,
+  ProjectCredentialFormValues,
   ProjectFormValues,
+  ProjectLink,
+  ProjectLinkFormValues,
   ProjectWithLatestBuild,
   UserRole,
 } from '@/types/database'
@@ -349,4 +353,124 @@ export async function updateProfilePrivileges(
     .single()
   if (error) throw error
   return data as Profile
+}
+
+export async function listProjectLinks(projectId: string): Promise<ProjectLink[]> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('project_links')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as ProjectLink[]
+}
+
+export async function createProjectLink(
+  projectId: string,
+  values: ProjectLinkFormValues,
+  userId: string,
+): Promise<ProjectLink> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('project_links')
+    .insert({
+      project_id: projectId,
+      name: values.name.trim(),
+      url: values.url.trim(),
+      environment: values.environment,
+      custom_environment:
+        values.environment === 'Other' ? values.custom_environment.trim() || null : null,
+      created_by: userId,
+    })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as ProjectLink
+}
+
+export async function updateProjectLink(
+  id: string,
+  values: ProjectLinkFormValues,
+): Promise<ProjectLink> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('project_links')
+    .update({
+      name: values.name.trim(),
+      url: values.url.trim(),
+      environment: values.environment,
+      custom_environment:
+        values.environment === 'Other' ? values.custom_environment.trim() || null : null,
+    })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as ProjectLink
+}
+
+export async function deleteProjectLink(id: string): Promise<void> {
+  const supabase = requireClient()
+  const { error } = await supabase.from('project_links').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function listProjectCredentials(
+  projectId: string,
+): Promise<ProjectCredential[]> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('project_credentials')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data ?? []) as ProjectCredential[]
+}
+
+export async function createProjectCredential(
+  projectId: string,
+  values: ProjectCredentialFormValues,
+  userId: string,
+): Promise<ProjectCredential> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('project_credentials')
+    .insert({
+      project_id: projectId,
+      label: values.label.trim(),
+      identifier: values.identifier.trim(),
+      password: values.password.trim() || null,
+      created_by: userId,
+    })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as ProjectCredential
+}
+
+export async function updateProjectCredential(
+  id: string,
+  values: ProjectCredentialFormValues,
+): Promise<ProjectCredential> {
+  const supabase = requireClient()
+  const { data, error } = await supabase
+    .from('project_credentials')
+    .update({
+      label: values.label.trim(),
+      identifier: values.identifier.trim(),
+      password: values.password.trim() || null,
+    })
+    .eq('id', id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as ProjectCredential
+}
+
+export async function deleteProjectCredential(id: string): Promise<void> {
+  const supabase = requireClient()
+  const { error } = await supabase.from('project_credentials').delete().eq('id', id)
+  if (error) throw error
 }

@@ -13,7 +13,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'icons/*.png'],
+      includeAssets: [
+        'favicon.ico',
+        'favicon.svg',
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'og-image.png',
+        'icons/*.png',
+      ],
       manifest: {
         name: 'Build Tracker',
         short_name: 'Build Tracker',
@@ -25,6 +33,16 @@ export default defineConfig({
         start_url: '/',
         scope: '/',
         icons: [
+          {
+            src: '/favicon-32x32.png',
+            sizes: '32x32',
+            type: 'image/png',
+          },
+          {
+            src: '/apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+          },
           {
             src: '/icons/icon-192.png',
             sizes: '192x192',

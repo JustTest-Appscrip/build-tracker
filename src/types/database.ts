@@ -67,6 +67,55 @@ export interface ProjectFormValues {
   description: string
 }
 
+export type LinkEnvironment = 'LIVE' | 'DEV' | 'STAG' | 'Other'
+
+export interface ProjectLink {
+  id: string
+  project_id: string
+  name: string
+  url: string
+  environment: LinkEnvironment
+  custom_environment: string | null
+  created_at: string
+  created_by: string
+}
+
+export interface ProjectCredential {
+  id: string
+  project_id: string
+  label: string
+  identifier: string
+  password: string | null
+  created_at: string
+  created_by: string
+}
+
+export interface ProjectLinkFormValues {
+  name: string
+  url: string
+  environment: LinkEnvironment
+  custom_environment: string
+}
+
+export interface ProjectCredentialFormValues {
+  label: string
+  identifier: string
+  password: string
+}
+
+export const EMPTY_LINK_FORM: ProjectLinkFormValues = {
+  name: '',
+  url: '',
+  environment: 'LIVE',
+  custom_environment: '',
+}
+
+export const EMPTY_CREDENTIAL_FORM: ProjectCredentialFormValues = {
+  label: '',
+  identifier: '',
+  password: '',
+}
+
 export interface BuildFilters {
   search: string
   environment: string

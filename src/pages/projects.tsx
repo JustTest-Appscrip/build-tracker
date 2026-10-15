@@ -61,11 +61,14 @@ export function ProjectsPage() {
   }, [configured])
 
   const list = showArchived ? archived : active
-  const filtered = useMemo(
-    () =>
-      list.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase())),
-    [list, search],
-  )
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return list
+    return list.filter((p) => {
+      const haystack = [p.name, p.description].filter(Boolean).join(' ').toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [list, search])
 
   async function handleCreate() {
     if (!user) return

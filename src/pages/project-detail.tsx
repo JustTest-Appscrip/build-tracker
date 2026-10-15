@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { BuildCard } from '@/components/builds/build-card'
 import { EmptyState } from '@/components/common/empty-state'
 import { PageSkeleton } from '@/components/common/loading-block'
+import { ProjectResources } from '@/components/projects/project-resources'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,12 +34,19 @@ import {
   archiveProject,
   getProject,
   listBuilds,
+  listProjectCredentials,
+  listProjectLinks,
   unarchiveProject,
   updateProject,
 } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
 import { validateProjectName } from '@/lib/validations'
-import type { BuildWithProject, Project } from '@/types/database'
+import type {
+  BuildWithProject,
+  Project,
+  ProjectCredential,
+  ProjectLink,
+} from '@/types/database'
 
 export function ProjectDetailPage() {
   const { id = '' } = useParams()
@@ -47,22 +55,37 @@ export function ProjectDetailPage() {
   const [loading, setLoading] = useState(true)
   const [project, setProject] = useState<Project | null>(null)
   const [builds, setBuilds] = useState<BuildWithProject[]>([])
+  const [links, setLinks] = useState<ProjectLink[]>([])
+  const [credentials, setCredentials] = useState<ProjectCredential[]>([])
   const [editOpen, setEditOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function refresh() {
-    const [p, b] = await Promise.all([
+    const [p, b, l, c] = await Promise.all([
       getProject(id),
       listBuilds({ project_id: id }, 100, 0),
+      listProjectLinks(id).catch(() => [] as ProjectLink[]),
+      listProjectCredentials(id).catch(() => [] as ProjectCredential[]),
     ])
     setProject(p)
     setBuilds(b.builds)
+    setLinks(l)
+    setCredentials(c)
     if (p) {
       setName(p.name)
       setDescription(p.description ?? '')
     }
+  }
+
+  async function refreshResources() {
+    const [l, c] = await Promise.all([
+      listProjectLinks(id),
+      listProjectCredentials(id),
+    ])
+    setLinks(l)
+    setCredentials(c)
   }
 
   useEffect(() => {
@@ -218,6 +241,17 @@ export function ProjectDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {user ? (
+        <ProjectResources
+          projectId={project.id}
+          userId={user.id}
+          isAdmin={isAdmin}
+          links={links}
+          credentials={credentials}
+          onChange={refreshResources}
+        />
+      ) : null}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
